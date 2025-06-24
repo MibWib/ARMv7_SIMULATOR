@@ -5,12 +5,13 @@
 Author:  Kieran Mochrie
 ID:      169048254
 Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-23"
+__updated__ = "2025-06-24"
 -------------------------------------------------------
 """
 # imports
 # Constants
 import sys
+import os
 from file_reader import load_binary
 from memory import init_memory, read_word
 from registers import init_registers, get_register, set_register, print_registers
@@ -19,8 +20,14 @@ from executor import execute_instruction
 from flags import check
 
 
+def get_bin_file_length(filepath):
+    """Returns the length of the binary file in bytes."""
+    return os.path.getsize(filepath)
+
+
 def main():
     # "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\main.py" "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\test_program.bin"
+    # "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\main.py" "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\test1.bin"
 
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <binary_file>")
@@ -33,10 +40,13 @@ def main():
     if load_binary(sys.argv[1], x) != 0:
         print("Failed to load binary file.")
         return 1
-    x = 1
-    loop = True
+
+    filepath = sys.argv[1]
+    file_length = int(get_bin_file_length(filepath))
+    print("file length:", file_length)
     # Start executing from PC = 0
-    while loop:
+
+    while x < file_length:
         pc = get_register(15)  # PC is R15
 
         instruction = read_word(pc)
@@ -53,8 +63,7 @@ def main():
 
         set_register(15, pc + 4)  # Move to next instruction
         # breaks infinite while loop i made on accident
-        if load_binary(sys.argv[1], x) != 0:
-            loop = False
+        x += 4
 
     print("\nFinal Register States:")
     print_registers()
