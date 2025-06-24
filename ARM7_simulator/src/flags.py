@@ -55,17 +55,19 @@ def check(raw, decode):
     }
     S = (raw >> 20) & 0x1  # if S=1 set new flags
     opcode = (raw >> 21) & 0xF
-
-    if(S == 1 | opcode == 0xB & conds.get(cond, False)):
+    # sets flags if S bit is true AND the condition is met or if any flag setting command is used AND the condition is met
+    if((S == 1 & conds.get(cond, False)) or (opcode == 0xB & conds.get(cond, False)) or (opcode == 0xA & conds.get(cond, False))
+            or (opcode == 0x9 & conds.get(cond, False)) or (opcode == 0x8 & conds.get(cond, False))):
 
         flag['z'] = zero(rn, rm)
-        flag['n'] = negative(rn, rm, opcode)
+        flag['n'] = negative(rn, rm, opcode, flag['c'])
         flag['c'] = carry(rn, rm)
         flag['v'] = overflow(rn, rm)
-
+        print(
+            f"flags updated, Z={flag['z']}, N={flag['n']}, C={flag['c']}, V={flag['v']}")
     if (conds.get(cond) == True):  # no place to store with cmp or cmn
 
-        execute_instruction(decode)
+        execute_instruction(decode, 1 if flag['c'] else 0)
 
 
 def zero(rn, rm):
@@ -79,24 +81,40 @@ def zero(rn, rm):
     return z
 
 
-def negative(rn, rm, op):
+def negative(rn, rm, op, c):
     rn1 = get_register(rn)
     rm1 = get_register(rm)
-
-    if op == 0x4:  # ADD
-        result = rn1 + rm1
+    C = 0
+    if(c):
+        C = 1
+    else:
+        C = 0
+    if op == 0x0:  # AND
+        result = rn1 & rm1
+    elif op == 0x1:  # EOR
+        result = rn1 ^ rm1
     elif op == 0x2:  # SUB
         result = rn1 - rm1
+    elif op == 0x3:  # RSB
+        result = rm1-rn1
+    elif op == 0x4:  # ADD
+        result = rn1 + rm1
+    elif op == 0x5:  # ADC
+        result = rn1+rm1+C
+    elif op == 0x6:  # SBC
+        result = rn1-rm1-(1-C)
+    elif op == 0x7:  # RSC
+        result = rm1-rn1-(1-C)
+    elif op == 0x8:  # TST
+        result = rn1 & rm1
+    elif op == 0x9:  # TEQ
+        result = rn1 ^ rm1
     elif op == 0xA:  # CMP
         result = rn1 - rm1
     elif op == 0xB:  # CMN
         result = rn1 + rm1
     elif op == 0xC:  # ORR
         result = rn1 | rm1
-    elif op == 0x0:  # AND
-        result = rn1 & rm1
-    elif op == 0x1:  # EOR
-        result = rn1 ^ rm1
     elif op == 0xD:  # MOV
         result = rm1
     elif op == 0xE:  # BIC

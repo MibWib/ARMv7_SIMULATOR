@@ -48,35 +48,55 @@ def decode_instruction(raw):
 
         else:
             inst.rm = raw & 0xF  # Register operand
-
-        if opcode == 0x4:
-            inst.mnemonic = "ADD"
-            print("t3")
-        elif opcode == 0x2:
-            inst.mnemonic = "SUB"
-            print("t4")
-        elif opcode == 0xD:
-            inst.mnemonic = "MOV"
-            print("t5")
-        elif opcode == 0xA:
-            inst.mnemonic = "CMP"
-            print("t8")
-        elif opcode == 0xB:
-            inst.mnemonic = "CMN"
-        elif opcode == 0xC:
-            inst.mnemonic = "ORR"
-        elif opcode == 0x0:
+        # opcodes
+        if opcode == 0x0:
             inst.mnemonic = "AND"
+
         elif opcode == 0x1:
             inst.mnemonic = "EOR"
+
+        elif opcode == 0x2:
+            inst.mnemonic = "SUB"
+
+        elif opcode == 0x3:
+            inst.mnemonic = "RSB"
+
+        elif opcode == 0x4:
+            inst.mnemonic = "ADD"
+
+        elif opcode == 0x5:
+            inst.mnemonic = "ADC"
+
+        elif opcode == 0x6:
+            inst.mnemonic = "SBC"
+
+        elif opcode == 0x7:
+            inst.mnemonic = "RSC"
+
+        elif opcode == 0x8:
+            inst.mnemonic = "TST"
+
+        elif opcode == 0x9:
+            inst.mnemonic = "TEQ"
+
+        elif opcode == 0xA:
+            inst.mnemonic = "CMP"
+
+        elif opcode == 0xB:
+            inst.mnemonic = "CMN"
+
+        elif opcode == 0xC:
+            inst.mnemonic = "ORR"
+
+        elif opcode == 0xD:
+            inst.mnemonic = "MOV"
+
         elif opcode == 0xE:
             inst.mnemonic = "BIC"
+
         else:
-            print("t6")
-            inst.is_valid = False
-            inst.mnemonic = "UNK"
+            inst.mnemonic = "MVN"
     else:
-        print("t7")
         inst.is_valid = False
         inst.mnemonic = "UNK"
 

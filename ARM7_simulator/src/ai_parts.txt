@@ -1,0 +1,8 @@
+MAIN:
+lines 23-25, 44-46(file length)
+
+DECODER:
+line: 42(if statement)
+
+FLAGS:
+lines: 38-55(conds, used AI to make it cleaner as there was just many if, elif, else statements before), 143(overflow method)
