@@ -5,7 +5,7 @@
 Author:  Kieran Mochrie
 ID:      169048254
 Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-23"
+__updated__ = "2025-06-24"
 -------------------------------------------------------
 """
 # Imports
@@ -24,8 +24,8 @@ def init_registers():
     for i in range(NUM_REGISTERS):
         registers[i] = 0
     registers[PC] = 0  # Start at address 0
-    registers[6] = 9
-    registers[7] = 10
+    #registers[6] = 9
+    #registers[7] = 10
 
 
 def get_register(reg_num):

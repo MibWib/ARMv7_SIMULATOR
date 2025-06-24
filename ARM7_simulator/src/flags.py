@@ -5,7 +5,7 @@
 Author:  Kieran Mochrie
 ID:      169048254
 Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-23"
+__updated__ = "2025-06-24"
 -------------------------------------------------------
 """
 # Imports
@@ -29,9 +29,10 @@ def check(raw, decode):
     i_bit = (raw >> 25) & 0x1
     if i_bit:
         rm = raw & 0xFF  # 8-bit immediate
-        print("i=1")
+        print("immediate=1")
     else:
         rm = raw & 0xF
+        print("immediate=0")
     # have all flags checked here
     # equal
     conds = {

@@ -5,7 +5,7 @@
 Author:  Kieran Mochrie
 ID:      169048254
 Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-23"
+__updated__ = "2025-06-24"
 -------------------------------------------------------
 """
 # Imports
@@ -37,11 +37,10 @@ def decode_instruction(raw):
     i_bit = (raw >> 25) & 0x1
     #print("raw stuff", raw, inst, opcode, i_bit)
     #print("raw & 0x0c", raw & 0x0C000000)
-    x = 0
 
     # Immediate or register data processing
     if (raw & 0x0C000000) == 0x00000000:
-        x = 1
+
         inst.rn = (raw >> 16) & 0xF
         inst.rd = (raw >> 12) & 0xF
         if i_bit:
@@ -80,6 +79,5 @@ def decode_instruction(raw):
         print("t7")
         inst.is_valid = False
         inst.mnemonic = "UNK"
-    print(x)
 
     return inst

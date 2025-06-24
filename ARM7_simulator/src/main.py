@@ -37,7 +37,7 @@ def main():
 
     init_registers()
     x = 0
-    if load_binary(sys.argv[1], x) != 0:
+    if load_binary(sys.argv[1]) != 0:
         print("Failed to load binary file.")
         return 1
 
@@ -45,12 +45,12 @@ def main():
     file_length = int(get_bin_file_length(filepath))
     print("file length:", file_length)
     # Start executing from PC = 0
-
-    while x < file_length:
+    pc = get_register(15)
+    while pc < file_length:
         pc = get_register(15)  # PC is R15
 
         instruction = read_word(pc)
-        print("instructions", instruction)
+        #print("instructions", instruction)
 
         decoded = decode_instruction(instruction)
         if not decoded.is_valid:

@@ -5,7 +5,7 @@
 Author:  Kieran Mochrie
 ID:      169048254
 Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-23"
+__updated__ = "2025-06-24"
 -------------------------------------------------------
 """
 # Imports
@@ -17,7 +17,7 @@ __updated__ = "2025-06-23"
 from memory import write_word
 
 
-def load_binary(filename, x):
+def load_binary(filename):
     try:
         with open(filename, "rb") as file:
             address = 0
@@ -33,7 +33,7 @@ def load_binary(filename, x):
                 write_word(address, word)
                 address += 4
 
-        return x
+        return 0
     except IOError as e:
         print(f"Error opening binary file: {e}")
         return -1
