@@ -5,7 +5,7 @@
 Author:  Kieran Mochrie
 ID:      169048254
 Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-23"
+__updated__ = "2025-06-24"
 -------------------------------------------------------
 """
 # Imports
@@ -59,6 +59,9 @@ def execute_instruction(inst: Instruction):
         operand = inst.immediate if inst.immediate else rm1
         result = rn1 & (~rm1)
         set_register(inst.rd, result)
+    elif inst.mnemonic == "CMP" or inst.mnemonic == "CMN":
+        print(
+            f"Known instruction: {inst.mnemonic}, flags updated, no value stored")
 
     else:
         print(f"Unknown instruction: {inst.mnemonic}")
