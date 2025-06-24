@@ -22,55 +22,42 @@ flag = {
 
 
 def check(raw, decode):
-
     cond = (raw >> 28) & 0xF
     rn = (raw >> 16) & 0xF
-
     i_bit = (raw >> 25) & 0x1
-    if i_bit:
-        rm = raw & 0xFF  # 8-bit immediate
-        print("immediate=1")
-    else:
-        rm = raw & 0xF
-        print("immediate=0")
-    # have all flags checked here
-    # equal
+    rm = raw & 0xFF if i_bit else raw & 0xF
+
     conds = {
-        0x0: flag['z'],  # equal EQ
-        0x1: not flag['z'],  # not equal NE
-        0x2: flag['c'],  # carry set CS
-        0x3: not flag['c'],  # carry clear CC
-        0x4: flag['n'],  # negative MI
-        0x5: not flag['n'],  # positive or 0 PL
-        0x6: flag['v'],  # overflow VS
-        0x7: not flag['v'],  # no overflow VC
-        0x8: flag['c'] and not flag['z'],  # unsigned higher HI
-        0x9: not flag['c'] or flag['z'],  # unsigned lower/same LS
-        0xA: flag['n'] == flag['v'],  # signed greater than or equal GE
-        0xB: flag['n'] != flag['v'],  # signed less than LT
-        # signed greater than GT
-        0xC: not flag['z'] and flag['n'] == flag['v'],
-        # signed less than or equal LE
-        0xD: flag['z'] or flag['n'] != flag['v'],
-        0xE: True  # always execute
-
+        0x0: flag['z'],                          
+        0x1: not flag['z'],                       # NE
+        0x2: flag['c'],                           # CS
+        0x3: not flag['c'],                       # CC
+        0x4: flag['n'],                           # MI
+        0x5: not flag['n'],                       # PL
+        0x6: flag['v'],                           # VS
+        0x7: not flag['v'],                       # VC
+        0x8: flag['c'] and not flag['z'],         # HI
+        0x9: not flag['c'] or flag['z'],          # LS
+        0xA: flag['n'] == flag['v'],              # GE
+        0xB: flag['n'] != flag['v'],              # LT
+        0xC: not flag['z'] and flag['n'] == flag['v'],  # GT
+        0xD: flag['z'] or flag['n'] != flag['v'],       # LE
+        0xE: True                                  # AL
     }
-    S = (raw >> 20) & 0x1  # if S=1 set new flags
+
+    S = (raw >> 20) & 0x1
     opcode = (raw >> 21) & 0xF
-    # sets flags if S bit is true AND the condition is met or if any flag setting command is used AND the condition is met
-    print("S=", S)
-    if((S == 1 & conds.get(cond, False)) or (opcode == 0xB & conds.get(cond, False)) or (opcode == 0xA & conds.get(cond, False))
-            or (opcode == 0x9 & conds.get(cond, False)) or (opcode == 0x8 & conds.get(cond, False))):
 
-        flag['z'] = zero(rn, rm)
-        flag['n'] = negative(rn, rm, opcode, flag['c'])
-        flag['c'] = carry(rn, rm)
-        flag['v'] = overflow(rn, rm)
-        print(
-            f"flags updated, Z={flag['z']}, N={flag['n']}, C={flag['c']}, V={flag['v']}")
-    if (conds.get(cond) == True):  # no place to store with cmp or cmn
+    if conds.get(cond, False):
+        if S == 1 or opcode in (0x8, 0x9, 0xA, 0xB):
+            flag['z'] = zero(rn, rm)
+            flag['n'] = negative(rn, rm, opcode, flag['c'])
+            flag['c'] = carry(rn, rm)
+            flag['v'] = overflow(rn, rm)
+            print(f"flags updated, Z={flag['z']}, N={flag['n']}, C={flag['c']}, V={flag['v']}")
+        return True
 
-        execute_instruction(decode, 1 if flag['c'] else 0)
+    return False
 
 
 def zero(rn, rm):
