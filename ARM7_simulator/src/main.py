@@ -17,8 +17,7 @@ from memory import init_memory, read_word
 from registers import init_registers, get_register, set_register, print_registers
 from decoder import decode_instruction
 from executor import execute_instruction
-from flags import check
-
+from flags import check, flag
 
 def get_bin_file_length(filepath):
     """Returns the length of the binary file in bytes."""
@@ -26,16 +25,13 @@ def get_bin_file_length(filepath):
 
 
 def main():
-    # "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\main.py" "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\test_program.bin"
-    # "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\main.py" "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\test1.bin"
-
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <binary_file>")
         return 1
 
     init_memory()
-
     init_registers()
+
     if load_binary(sys.argv[1]) != 0:
         print("Failed to load binary file.")
         return 1
@@ -43,13 +39,10 @@ def main():
     filepath = sys.argv[1]
     file_length = int(get_bin_file_length(filepath))
     print("file length:", file_length)
-    # Start executing from PC = 0
-    pc = get_register(15)
-    while pc < (file_length-4):
-        pc = get_register(15)  # PC is R15
 
+    while get_register(15) < (file_length - 4):
+        pc = get_register(15)
         instruction = read_word(pc)
-        #print("instructions", instruction)
 
         decoded = decode_instruction(instruction)
         if not decoded.is_valid:
@@ -58,9 +51,11 @@ def main():
 
         print("decoded", decoded)
 
-        check(instruction, decoded)  # check flags for instruction
+        if check(instruction, decoded):
+            execute_instruction(decoded, 1 if flag['c'] else 0)
 
-        set_register(15, pc + 4)  # Move to next instruction
+        if get_register(15) == pc:
+            set_register(15, pc + 4)
 
     print("\nFinal Register States:")
     print_registers()
