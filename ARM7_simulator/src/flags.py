@@ -36,26 +36,29 @@ def check(raw, decode):
     # have all flags checked here
     # equal
     conds = {
-        0x0: flag['z'],
-        0x1: not flag['z'],
-        0x2: flag['c'],
-        0x3: not flag['c'],
-        0x4: flag['n'],
-        0x5: not flag['n'],
-        0x6: flag['v'],
-        0x7: not flag['v'],
-        0x8: flag['c'] and not flag['z'],
-        0x9: not flag['c'],
-        0xA: flag['n'] == flag['v'],
-        0xB: flag['n'] != flag['v'],
+        0x0: flag['z'],  # equal EQ
+        0x1: not flag['z'],  # not equal NE
+        0x2: flag['c'],  # carry set CS
+        0x3: not flag['c'],  # carry clear CC
+        0x4: flag['n'],  # negative MI
+        0x5: not flag['n'],  # positive or 0 PL
+        0x6: flag['v'],  # overflow VS
+        0x7: not flag['v'],  # no overflow VC
+        0x8: flag['c'] and not flag['z'],  # unsigned higher HI
+        0x9: not flag['c'] or flag['z'],  # unsigned lower/same LS
+        0xA: flag['n'] == flag['v'],  # signed greater than or equal GE
+        0xB: flag['n'] != flag['v'],  # signed less than LT
+        # signed greater than GT
         0xC: not flag['z'] and flag['n'] == flag['v'],
-        0xD: flag['z'],
+        # signed less than or equal LE
+        0xD: flag['z'] or flag['n'] != flag['v'],
         0xE: True  # always execute
 
     }
     S = (raw >> 20) & 0x1  # if S=1 set new flags
     opcode = (raw >> 21) & 0xF
     # sets flags if S bit is true AND the condition is met or if any flag setting command is used AND the condition is met
+    print("S=", S)
     if((S == 1 & conds.get(cond, False)) or (opcode == 0xB & conds.get(cond, False)) or (opcode == 0xA & conds.get(cond, False))
             or (opcode == 0x9 & conds.get(cond, False)) or (opcode == 0x8 & conds.get(cond, False))):
 

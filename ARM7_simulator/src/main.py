@@ -36,7 +36,6 @@ def main():
     init_memory()
 
     init_registers()
-    x = 0
     if load_binary(sys.argv[1]) != 0:
         print("Failed to load binary file.")
         return 1
@@ -46,7 +45,7 @@ def main():
     print("file length:", file_length)
     # Start executing from PC = 0
     pc = get_register(15)
-    while pc < file_length:
+    while pc < (file_length-4):
         pc = get_register(15)  # PC is R15
 
         instruction = read_word(pc)
@@ -62,8 +61,6 @@ def main():
         check(instruction, decoded)  # check flags for instruction
 
         set_register(15, pc + 4)  # Move to next instruction
-        # breaks infinite while loop i made on accident
-        x += 4
 
     print("\nFinal Register States:")
     print_registers()
