@@ -33,6 +33,10 @@ def execute_instruction(inst: Instruction, C):
         operand = inst.immediate if inst.immediate else rm1
         result = rn1 & rm1
 
+    elif inst.mnemonic == "B":
+        pc = get_register(15)
+        set_register(15, pc + inst.immediate)
+
     elif inst.mnemonic == "EOR":
         operand = inst.immediate if inst.immediate else rm1
         result = rn1 ^ rm1
