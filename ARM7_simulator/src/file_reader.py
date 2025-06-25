@@ -28,8 +28,7 @@ def load_binary(filename):
 
                     break  # Stop if fewer than 4 bytes are read (end of file)
 
-                word = (buffer[0] << 24) | (buffer[1] << 16) | (
-                    buffer[2] << 8) | buffer[3]
+                word = int.from_bytes(buffer, byteorder='little')
                 write_word(address, word)
                 address += 4
 
