@@ -31,8 +31,11 @@ class Instruction:
 def decode_instruction(raw):
     inst = Instruction(raw=raw)
 
+    cond = (raw >> 28) & 0xF
     opcode = (raw >> 21) & 0xF
     i_bit = (raw >> 25) & 0x1
+    inst.rn = (raw >> 16) & 0xF
+    inst.rd = (raw >> 12) & 0xF
 
     if (raw & 0x0E000000) == 0x0A000000:
         inst.mnemonic = "B"
@@ -44,9 +47,7 @@ def decode_instruction(raw):
         return inst  # done
 
     elif (raw & 0x0C000000) == 0x00000000:
-        inst.rn = (raw >> 16) & 0xF
-        inst.rd = (raw >> 12) & 0xF
-
+        # Data-processing instruction
         if i_bit:
             inst.immediate = raw & 0xFF
         else:
@@ -67,7 +68,7 @@ def decode_instruction(raw):
         elif opcode == 0xC: inst.mnemonic = "ORR"
         elif opcode == 0xD: inst.mnemonic = "MOV"
         elif opcode == 0xE: inst.mnemonic = "BIC"
-        else: inst.mnemonic = "MVN"
+        elif opcode == 0xF: inst.mnemonic = "MVN"
 
     else:
         inst.is_valid = False
