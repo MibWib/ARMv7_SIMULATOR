@@ -25,8 +25,6 @@ def get_bin_file_length(filepath):
     """Returns the length of the binary file in bytes."""
     return os.path.getsize(filepath)
 
-# "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\main.py" "C:\Users\kiera\eclipse2\ws\ARM7_simulator\src\test_custom.bin"
-
 
 def main():
     if len(sys.argv) != 2:
