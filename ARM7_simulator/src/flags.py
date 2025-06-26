@@ -5,7 +5,7 @@
 Author:  Kieran Mochrie
 ID:      169048254
 Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-24"
+__updated__ = "2025-06-26"
 -------------------------------------------------------
 """
 # Imports
@@ -28,7 +28,7 @@ def check(raw, decode):
     rm = raw & 0xFF if i_bit else raw & 0xF
 
     conds = {
-        0x0: flag['z'],                          
+        0x0: flag['z'],                           # EQ
         0x1: not flag['z'],                       # NE
         0x2: flag['c'],                           # CS
         0x3: not flag['c'],                       # CC
@@ -44,19 +44,39 @@ def check(raw, decode):
         0xD: flag['z'] or flag['n'] != flag['v'],       # LE
         0xE: True                                  # AL
     }
-
+    condsNames = {
+        0x0: "EQ: Z==1",                          # EQ
+        0x1: "NE: Z==0",                          # NE
+        0x2: "CS: C==1",                          # CS
+        0x3: "CC: C==0",                          # CC
+        0x4: "MI: N==1",                          # MI
+        0x5: "PL: N==0",                          # PL
+        0x6: "VS: V==1",                          # VS
+        0x7: "VC: V==0",                          # VC
+        0x8: "HI: C==1 AND Z==0",                 # HI
+        0x9: "LS: C==0 OR Z==0",                  # LS
+        0xA: "GE: N==V",                          # GE
+        0xB: "LT: N!=V",                          # LT
+        0xC: "GT: Z==0 AND N==V",                 # GT
+        0xD: "LE: Z==1 OR N!=V",                  # LE
+        0xE: "AL"                                 # AL
+    }
     S = (raw >> 20) & 0x1
     opcode = (raw >> 21) & 0xF
-
+    print(f"Condition {cond:#X} - {condsNames.get(cond)}")
+    print(
+        f"Current flags, Z={flag['z']}, N={flag['n']}, C={flag['c']}, V={flag['v']}")
     if conds.get(cond, False):
+        print("Condition met")
         if S == 1 or opcode in (0x8, 0x9, 0xA, 0xB):
             flag['z'] = zero(rn, rm)
             flag['n'] = negative(rn, rm, opcode, flag['c'])
             flag['c'] = carry(rn, rm)
             flag['v'] = overflow(rn, rm)
-            print(f"flags updated, Z={flag['z']}, N={flag['n']}, C={flag['c']}, V={flag['v']}")
+            print(
+                f"flags updated, Z={flag['z']}, N={flag['n']}, C={flag['c']}, V={flag['v']}")
         return True
-
+    print("Condition not met")
     return False
 
 

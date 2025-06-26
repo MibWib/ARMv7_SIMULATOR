@@ -1,3 +1,4 @@
+
 """
 -------------------------------------------------------
 [program description]
@@ -5,7 +6,7 @@
 Author:  Kieran Mochrie
 ID:      169048254
 Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-24"
+__updated__ = "2025-06-26"
 -------------------------------------------------------
 """
 # imports
@@ -17,7 +18,8 @@ from memory import init_memory, read_word
 from registers import init_registers, get_register, set_register, print_registers
 from decoder import decode_instruction
 from executor import execute_instruction
-from flags import check, flag  
+from flags import check, flag
+
 
 def get_bin_file_length(filepath):
     """Returns the length of the binary file in bytes."""
@@ -56,6 +58,9 @@ def main():
 
         if get_register(15) == pc:
             set_register(15, pc + 4)
+            print("\nCurrent Register States:")
+            print_registers()
+            print("--------------------------\n")
 
     print("\nFinal Register States:")
     print_registers()
