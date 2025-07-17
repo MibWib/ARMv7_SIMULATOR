@@ -21,6 +21,12 @@ class Cache:
 
         self.miss_count = 0
         self.write_back_count = 0
+        self.hits = 0
+        self.misses = 0
+        self.writebacks = 0
+        self.offset_bits = int(math.log2(self.block_size))
+        num_sets = self.size // (self.block_size * self.associativity)
+        self.index_bits = int(math.log2(num_sets)) if num_sets > 1 else 0
 
     def get_cache_info(self, address):
         offset = address & ((1 << self.offset_bits) - 1)
