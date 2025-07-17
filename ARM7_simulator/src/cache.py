@@ -12,32 +12,15 @@ class CacheBlock:
         self.lru_counter = 0
 
 class Cache:
-    def __init__(self, cache_size, block_size, associativity, write_policy="write_back"):
-        self.cache_size = cache_size
+    def __init__(self, size, block_size=16, associativity=1, mapping='direct'):
+        self.size = size
         self.block_size = block_size
         self.associativity = associativity
-        self.write_policy = write_policy
-        
-        # Calculate cache parameters
-        self.num_blocks = cache_size // block_size
-        self.num_sets = self.num_blocks // associativity
-        self.offset_bits = int(math.log2(block_size))
-        self.index_bits = int(math.log2(self.num_sets)) if self.num_sets > 1 else 0
-        self.tag_bits = 32 - self.offset_bits - self.index_bits
-        
-        # Initialize cache blocks
-        self.blocks = []
-        for i in range(self.num_sets):
-            set_blocks = []
-            for j in range(associativity):
-                set_blocks.append(CacheBlock(block_size // 4))  # 4 bytes per word
-            self.blocks.append(set_blocks)
-        
-        # Statistics
-        self.hits = 0
-        self.misses = 0
-        self.writebacks = 0
-        self.lru_counter = 0
+        self.mapping = mapping  # 'direct' or 'fully'
+        self.blocks = {}
+
+        self.miss_count = 0
+        self.write_back_count = 0
 
     def get_cache_info(self, address):
         offset = address & ((1 << self.offset_bits) - 1)
@@ -78,64 +61,17 @@ class Cache:
             mem_write_word(word_addr, block.data[i])
 
     def read(self, address):
-        tag, index, word_offset = self.get_cache_info(address)
-        block_idx = self.find_block(tag, index)
-        
-        if block_idx != -1:  # Cache hit
-            self.hits += 1
-            block = self.blocks[index][block_idx]
-            self.update_lru(index, block_idx)
-            return block.data[word_offset]
-        else:  # Cache miss
-            self.misses += 1
-            # Find LRU block to replace
-            lru_idx = self.find_lru_block(index)
-            block = self.blocks[index][lru_idx]
-            
-            # Write back if dirty
-            if block.valid and block.dirty:
-                old_address = (block.tag << (self.offset_bits + self.index_bits)) | (index << self.offset_bits)
-                self.write_block_to_memory(old_address, block)
-                self.writebacks += 1
-            
-            # Load new block
-            self.load_block_from_memory(address, block)
-            block.valid = True
-            block.dirty = False
-            block.tag = tag
-            self.update_lru(index, lru_idx)
-            
-            return block.data[word_offset]
+        block_addr = address // self.block_size * self.block_size
+        if block_addr not in self.blocks:
+            self.miss_count += 1
+            return None
+        return self.blocks[block_addr]
 
     def write(self, address, data):
-        tag, index, word_offset = self.get_cache_info(address)
-        block_idx = self.find_block(tag, index)
-        
-        if block_idx != -1:  # Cache hit
-            self.hits += 1
-            block = self.blocks[index][block_idx]
-            block.data[word_offset] = data
-            block.dirty = True
-            self.update_lru(index, block_idx)
-        else:  # Cache miss
-            self.misses += 1
-            # Find LRU block to replace
-            lru_idx = self.find_lru_block(index)
-            block = self.blocks[index][lru_idx]
-            
-            # Write back if dirty
-            if block.valid and block.dirty:
-                old_address = (block.tag << (self.offset_bits + self.index_bits)) | (index << self.offset_bits)
-                self.write_block_to_memory(old_address, block)
-                self.writebacks += 1
-            
-            # Load new block
-            self.load_block_from_memory(address, block)
-            block.valid = True
-            block.tag = tag
-            block.data[word_offset] = data
-            block.dirty = True
-            self.update_lru(index, lru_idx)
+        block_addr = address // self.block_size * self.block_size
+        if block_addr in self.blocks:
+            self.write_back_count += 1
+        self.blocks[block_addr] = data
 
     def get_stats(self):
         return {
