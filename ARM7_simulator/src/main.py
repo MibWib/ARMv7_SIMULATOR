@@ -105,7 +105,8 @@ def run_cache_experiments(binary_file):
 
         init_memory()
         init_registers()
-        init_memory_hierarchy(l1_block, l2_block, l1_assoc)
+        global memory_hierarchy
+        memory_hierarchy = init_memory_hierarchy(l1_block, l2_block, l1_assoc)
         
         if load_binary(binary_file) != 0:
             print("Failed to load binary file.")
