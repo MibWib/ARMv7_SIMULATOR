@@ -20,6 +20,11 @@ from decoder import decode_instruction
 from executor import execute_instruction
 from flags import check, flag
 from memory_hierarchy import init_memory_hierarchy, memory_hierarchy, read_instruction_with_cache
+from decoder import decode_instruction
+from executor import execute_instruction
+from memory_hierarchy import read_instruction_with_cache
+from registers import get_register, set_register
+
 
 
 def get_bin_file_length(filepath):
