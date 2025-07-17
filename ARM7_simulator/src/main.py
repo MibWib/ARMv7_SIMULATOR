@@ -11,6 +11,7 @@ __updated__ = "2025-06-26"
 """
 # imports
 # Constants
+import json
 import sys
 import os
 from file_reader import load_binary
