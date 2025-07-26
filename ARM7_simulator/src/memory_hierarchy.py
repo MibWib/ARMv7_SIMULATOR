@@ -70,7 +70,6 @@ memory_hierarchy = None
 def init_memory_hierarchy(l1_block_size=16, l2_block_size=32, l1_associativity=1):
     global memory_hierarchy
     memory_hierarchy = MemoryHierarchy(l1_block_size, l2_block_size, l1_associativity)
-    return memory_hierarchy
 
 def read_instruction_with_cache(address):
     global memory_hierarchy

@@ -12,7 +12,6 @@ class CacheBlock:
         self.lru_counter = 0
 
 class Cache:
-<<<<<<< HEAD
     def __init__(self, cache_size, block_size, associativity, write_policy="write_back", next_level=None):
         self.cache_size = cache_size
         self.block_size = block_size
@@ -36,23 +35,10 @@ class Cache:
             self.blocks.append(set_blocks)
         
         # Statistics
-=======
-    def __init__(self, size, block_size=16, associativity=1, mapping='direct'):
-        self.size = size
-        self.block_size = block_size
-        self.associativity = associativity
-        self.mapping = mapping  # 'direct' or 'fully'
-        self.blocks = {}
-
-        self.miss_count = 0
-        self.write_back_count = 0
->>>>>>> a4a493c0da7918ae15944193b478a1a751aa1527
         self.hits = 0
         self.misses = 0
         self.writebacks = 0
-        self.offset_bits = int(math.log2(self.block_size))
-        num_sets = self.size // (self.block_size * self.associativity)
-        self.index_bits = int(math.log2(num_sets)) if num_sets > 1 else 0
+        self.lru_counter = 0
 
     def get_cache_info(self, address):
         offset = address & ((1 << self.offset_bits) - 1)
@@ -111,7 +97,6 @@ class Cache:
                 mem_write_word(word_addr, block.data[i])
 
     def read(self, address):
-<<<<<<< HEAD
         tag, index, word_offset = self.get_cache_info(address)
         block_idx = self.find_block(tag, index)
         
@@ -170,19 +155,6 @@ class Cache:
             block.data[word_offset] = data
             block.dirty = True
             self.update_lru(index, lru_idx)
-=======
-        block_addr = address // self.block_size * self.block_size
-        if block_addr not in self.blocks:
-            self.miss_count += 1
-            return None
-        return self.blocks[block_addr]
-
-    def write(self, address, data):
-        block_addr = address // self.block_size * self.block_size
-        if block_addr in self.blocks:
-            self.write_back_count += 1
-        self.blocks[block_addr] = data
->>>>>>> a4a493c0da7918ae15944193b478a1a751aa1527
 
     def get_stats(self):
         return {
