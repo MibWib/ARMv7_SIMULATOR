@@ -1,4 +1,3 @@
-
 """
 -------------------------------------------------------
 [program description]
@@ -13,6 +12,7 @@ __updated__ = "2025-06-26"
 # Constants
 import sys
 import os
+import json
 from file_reader import load_binary
 from memory import init_memory, read_word
 from registers import init_registers, get_register, set_register, print_registers
@@ -74,29 +74,37 @@ def run_single_simulation(binary_file):
 def run_cache_experiments(binary_file):
     """Run experiments with different cache configurations"""
     
-    # Different cache configurations to test
-    configurations = [
-        # L1 block size, L2 block size, L1 associativity
-        (4, 16, 1),    # Direct mapped L1, 4B blocks
-        (8, 32, 1),    # Direct mapped L1, 8B blocks
-        (16, 32, 1),   # Direct mapped L1, 16B blocks
-        (32, 64, 1),   # Direct mapped L1, 32B blocks
-        (16, 32, 1024//16),  # Fully associative L1, 16B blocks
-        (32, 64, 1024//32),  # Fully associative L1, 32B blocks
-    ]
+    # Complete configuration testing as per requirements
+    l1_block_sizes = [4, 8, 16, 32]  # All required block sizes
+    l2_block_sizes = [16, 32, 64]    # All required block sizes
+    l1_associativities = [1, 1024//16, 1024//32]  # Direct mapped and fully associative for different block sizes
+    
+    configurations = []
+    
+    # Generate all valid combinations
+    for l1_block in l1_block_sizes:
+        for l2_block in l2_block_sizes:
+            # Direct mapped L1
+            configurations.append((l1_block, l2_block, 1))
+            
+            # Fully associative L1 (if block size allows)
+            if l1_block <= 32:  # Reasonable constraint for fully associative
+                fa_assoc = 1024 // l1_block
+                configurations.append((l1_block, l2_block, fa_assoc))
     
     results = []
     best_config = None
     best_cost = float('inf')
     
-    print(f"\n{'='*60}")
+    print(f"\n{'='*80}")
     print(f"CACHE CONFIGURATION EXPERIMENTS FOR {binary_file}")
-    print(f"{'='*60}")
+    print(f"Testing {len(configurations)} different configurations")
+    print(f"{'='*80}")
     
     for i, (l1_block, l2_block, l1_assoc) in enumerate(configurations):
-        print(f"\nConfiguration {i+1}:")
-        print(f"L1: {l1_block}B blocks, {'Direct' if l1_assoc == 1 else 'Fully Associative'}")
-        print(f"L2: {l2_block}B blocks, Direct mapped")
+        print(f"\nConfiguration {i+1}/{len(configurations)}:")
+        print(f"L1: {l1_block}B blocks, {'Direct-mapped' if l1_assoc == 1 else f'{l1_assoc}-way associative'}")
+        print(f"L2: {l2_block}B blocks, Direct-mapped")
 
         init_memory()
         init_registers()
@@ -110,6 +118,7 @@ def run_cache_experiments(binary_file):
         
         memory_hierarchy.reset_stats()
         
+        # Run the simulation
         while get_register(15) < (file_length - 4):
             pc = get_register(15)
             instruction = read_instruction_with_cache(pc)
@@ -125,20 +134,33 @@ def run_cache_experiments(binary_file):
             if get_register(15) == pc:
                 set_register(15, pc + 4)
         
+        # Collect statistics
         stats = memory_hierarchy.get_total_stats()
+        config_name = f"L1:{l1_block}B-{'DM' if l1_assoc == 1 else f'{l1_assoc}way'}_L2:{l2_block}B-DM"
+        
         results.append({
-            'config': f"L1:{l1_block}B-{'DM' if l1_assoc == 1 else 'FA'}_L2:{l2_block}B-DM",
+            'config_id': i+1,
+            'config': config_name,
             'l1_block_size': l1_block,
             'l2_block_size': l2_block,
-            'l1_associativity': 'Direct' if l1_assoc == 1 else 'Fully Associative',
-            'l1_misses': stats['total_l1_misses'],
-            'l2_misses': stats['total_l2_misses'],
+            'l1_associativity': 'Direct-mapped' if l1_assoc == 1 else f'{l1_assoc}-way associative',
+            'l1_instruction_hits': stats['l1_instruction_cache']['hits'],
+            'l1_instruction_misses': stats['l1_instruction_cache']['misses'],
+            'l1_data_hits': stats['l1_data_cache']['hits'],
+            'l1_data_misses': stats['l1_data_cache']['misses'],
+            'l2_hits': stats['l2_cache']['hits'],
+            'l2_misses': stats['l2_cache']['misses'],
+            'total_l1_misses': stats['total_l1_misses'],
+            'total_l2_misses': stats['total_l2_misses'],
             'writebacks': stats['total_writebacks'],
             'cost': stats['cost']
         })
         
-        print(f"L1 Misses: {stats['total_l1_misses']}")
-        print(f"L2 Misses: {stats['total_l2_misses']}")
+        print(f"L1 I-Cache: {stats['l1_instruction_cache']['hits']} hits, {stats['l1_instruction_cache']['misses']} misses")
+        print(f"L1 D-Cache: {stats['l1_data_cache']['hits']} hits, {stats['l1_data_cache']['misses']} misses")
+        print(f"L2 Cache: {stats['l2_cache']['hits']} hits, {stats['l2_cache']['misses']} misses")
+        print(f"Total L1 Misses: {stats['total_l1_misses']}")
+        print(f"Total L2 Misses: {stats['total_l2_misses']}")
         print(f"Writebacks: {stats['total_writebacks']}")
         print(f"Cost: {stats['cost']:.2f}")
         
@@ -146,26 +168,33 @@ def run_cache_experiments(binary_file):
             best_cost = stats['cost']
             best_config = results[-1]
     
-    #saves results to file
-    output_file = f"cache_results_{os.path.basename(binary_file)}.json"
+    # Save results to file
+    output_file = f"cache_results_{os.path.basename(binary_file).replace('.bin', '')}.json"
     with open(output_file, 'w') as f:
         json.dump({
             'binary_file': binary_file,
+            'total_configurations_tested': len(configurations),
             'configurations': results,
-            'best_configuration': best_config
+            'best_configuration': best_config,
+            'cost_formula': 'Cost = 0.5 * L1_misses + L2_misses + writebacks'
         }, f, indent=2)
     
-    print(f"\n{'='*60}")
-    print("BEST CONFIGURATION:")
+    print(f"\n{'='*80}")
+    print("EXPERIMENT SUMMARY:")
+    print(f"Tested {len(configurations)} configurations")
+    print(f"\nBEST CONFIGURATION:")
     if best_config:
         print(f"Config: {best_config['config']}")
+        print(f"L1 Block Size: {best_config['l1_block_size']}B")
+        print(f"L2 Block Size: {best_config['l2_block_size']}B")
+        print(f"L1 Associativity: {best_config['l1_associativity']}")
         print(f"Cost: {best_config['cost']:.2f}")
-        print(f"L1 Misses: {best_config['l1_misses']}")
-        print(f"L2 Misses: {best_config['l2_misses']}")
+        print(f"L1 Misses: {best_config['total_l1_misses']}")
+        print(f"L2 Misses: {best_config['total_l2_misses']}")
         print(f"Writebacks: {best_config['writebacks']}")
     
-    print(f"\nResults saved to: {output_file}")
-    print(f"{'='*60}")
+    print(f"\nDetailed results saved to: {output_file}")
+    print(f"{'='*80}")
 
 
 def main():

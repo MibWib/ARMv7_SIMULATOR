@@ -4,35 +4,27 @@ from cache import Cache
 
 class MemoryHierarchy:
     def __init__(self, l1_block_size=16, l2_block_size=32, l1_associativity=1):
-        # L1 caches (1KB each)
-        self.l1_instruction_cache = Cache(1024, l1_block_size, l1_associativity)
-        self.l1_data_cache = Cache(1024, l1_block_size, l1_associativity)
+        # Create L2 cache first (no next level - goes to main memory)
+        self.l2_cache = Cache(16384, l2_block_size, 1)  # Direct mapped, 16KB
         
-        # L2 unified cache (16KB)
-        self.l2_cache = Cache(16384, l2_block_size, 1)  # Direct mapped
+        # Create L1 caches with L2 as next level
+        self.l1_instruction_cache = Cache(1024, l1_block_size, l1_associativity, next_level=self.l2_cache)
+        self.l1_data_cache = Cache(1024, l1_block_size, l1_associativity, next_level=self.l2_cache)
         
         # Track if we're in data or instruction fetch mode
         self.instruction_fetch = False
 
     def read_instruction(self, address):
         self.instruction_fetch = True
-        data = self.l1_instruction_cache.read(address)
-        if data is None:  # L1 miss, try L2
-            data = self.l2_cache.read(address)
-        return data
+        return self.l1_instruction_cache.read(address)
 
     def read_data(self, address):
         self.instruction_fetch = False
-        data = self.l1_data_cache.read(address)
-        if data is None:  # L1 miss, try L2
-            data = self.l2_cache.read(address)
-        return data
+        return self.l1_data_cache.read(address)
 
     def write_data(self, address, data):
         self.instruction_fetch = False
         self.l1_data_cache.write(address, data)
-        # For write-back, we don't immediately write to L2
-        # It will be written when the block is evicted
 
     def get_total_stats(self):
         l1_i_stats = self.l1_instruction_cache.get_stats()
@@ -63,13 +55,13 @@ class MemoryHierarchy:
     def print_stats(self):
         stats = self.get_total_stats()
         print(f"\n=== Cache Statistics ===")
-        print(f"L1 Instruction Cache: {stats['l1_instruction_cache']['hits']} hits, {stats['l1_instruction_cache']['misses']} misses")
-        print(f"L1 Data Cache: {stats['l1_data_cache']['hits']} hits, {stats['l1_data_cache']['misses']} misses")
-        print(f"L2 Cache: {stats['l2_cache']['hits']} hits, {stats['l2_cache']['misses']} misses")
+        print(f"L1 Instruction Cache: {stats['l1_instruction_cache']['hits']} hits, {stats['l1_instruction_cache']['misses']} misses (Hit Rate: {stats['l1_instruction_cache']['hit_rate']:.3f})")
+        print(f"L1 Data Cache: {stats['l1_data_cache']['hits']} hits, {stats['l1_data_cache']['misses']} misses (Hit Rate: {stats['l1_data_cache']['hit_rate']:.3f})")
+        print(f"L2 Cache: {stats['l2_cache']['hits']} hits, {stats['l2_cache']['misses']} misses (Hit Rate: {stats['l2_cache']['hit_rate']:.3f})")
         print(f"Total L1 Misses: {stats['total_l1_misses']}")
         print(f"Total L2 Misses: {stats['total_l2_misses']}")
         print(f"Total Writebacks: {stats['total_writebacks']}")
-        print(f"Cost: {stats['cost']}")
+        print(f"Cost: {stats['cost']:.2f}")
         print("========================\n")
 
 # Global memory hierarchy instance

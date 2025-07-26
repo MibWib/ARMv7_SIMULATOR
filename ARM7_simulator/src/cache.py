@@ -12,11 +12,12 @@ class CacheBlock:
         self.lru_counter = 0
 
 class Cache:
-    def __init__(self, cache_size, block_size, associativity, write_policy="write_back"):
+    def __init__(self, cache_size, block_size, associativity, write_policy="write_back", next_level=None):
         self.cache_size = cache_size
         self.block_size = block_size
         self.associativity = associativity
         self.write_policy = write_policy
+        self.next_level = next_level  # Next level cache (L2 for L1, None for L2)
         
         # Calculate cache parameters
         self.num_blocks = cache_size // block_size
@@ -65,17 +66,35 @@ class Cache:
         self.lru_counter += 1
         self.blocks[index][block_idx].lru_counter = self.lru_counter
 
-    def load_block_from_memory(self, address, block):
+    def load_block_from_next_level(self, address, block):
+        """Load block from next level cache or main memory"""
         block_address = address & ~((1 << self.offset_bits) - 1)
-        for i in range(self.block_size // 4):
-            word_addr = block_address + (i * 4)
-            block.data[i] = mem_read_word(word_addr)
+        
+        if self.next_level:
+            # Load from next level cache
+            for i in range(self.block_size // 4):
+                word_addr = block_address + (i * 4)
+                block.data[i] = self.next_level.read(word_addr)
+        else:
+            # Load from main memory
+            for i in range(self.block_size // 4):
+                word_addr = block_address + (i * 4)
+                block.data[i] = mem_read_word(word_addr)
 
-    def write_block_to_memory(self, address, block):
+    def write_block_to_next_level(self, address, block):
+        """Write block to next level cache or main memory"""
         block_address = address & ~((1 << self.offset_bits) - 1)
-        for i in range(self.block_size // 4):
-            word_addr = block_address + (i * 4)
-            mem_write_word(word_addr, block.data[i])
+        
+        if self.next_level:
+            # Write to next level cache
+            for i in range(self.block_size // 4):
+                word_addr = block_address + (i * 4)
+                self.next_level.write(word_addr, block.data[i])
+        else:
+            # Write to main memory
+            for i in range(self.block_size // 4):
+                word_addr = block_address + (i * 4)
+                mem_write_word(word_addr, block.data[i])
 
     def read(self, address):
         tag, index, word_offset = self.get_cache_info(address)
@@ -95,11 +114,11 @@ class Cache:
             # Write back if dirty
             if block.valid and block.dirty:
                 old_address = (block.tag << (self.offset_bits + self.index_bits)) | (index << self.offset_bits)
-                self.write_block_to_memory(old_address, block)
+                self.write_block_to_next_level(old_address, block)
                 self.writebacks += 1
             
-            # Load new block
-            self.load_block_from_memory(address, block)
+            # Load new block from next level
+            self.load_block_from_next_level(address, block)
             block.valid = True
             block.dirty = False
             block.tag = tag
@@ -126,11 +145,11 @@ class Cache:
             # Write back if dirty
             if block.valid and block.dirty:
                 old_address = (block.tag << (self.offset_bits + self.index_bits)) | (index << self.offset_bits)
-                self.write_block_to_memory(old_address, block)
+                self.write_block_to_next_level(old_address, block)
                 self.writebacks += 1
             
-            # Load new block
-            self.load_block_from_memory(address, block)
+            # Load new block from next level
+            self.load_block_from_next_level(address, block)
             block.valid = True
             block.tag = tag
             block.data[word_offset] = data
