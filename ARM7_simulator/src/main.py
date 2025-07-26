@@ -10,6 +10,7 @@ __updated__ = "2025-06-26"
 """
 # imports
 # Constants
+import json
 import sys
 import os
 import json
@@ -20,6 +21,11 @@ from decoder import decode_instruction
 from executor import execute_instruction
 from flags import check, flag
 from memory_hierarchy import init_memory_hierarchy, memory_hierarchy, read_instruction_with_cache
+from decoder import decode_instruction
+from executor import execute_instruction
+from memory_hierarchy import read_instruction_with_cache
+from registers import get_register, set_register
+
 
 
 def get_bin_file_length(filepath):
@@ -108,7 +114,8 @@ def run_cache_experiments(binary_file):
 
         init_memory()
         init_registers()
-        init_memory_hierarchy(l1_block, l2_block, l1_assoc)
+        global memory_hierarchy
+        memory_hierarchy = init_memory_hierarchy(l1_block, l2_block, l1_assoc)
         
         if load_binary(binary_file) != 0:
             print("Failed to load binary file.")
