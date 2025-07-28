@@ -1,21 +1,6 @@
-"""
--------------------------------------------------------
-[program description]
--------------------------------------------------------
-Author:  Kieran Mochrie
-ID:      169048254
-Email:   moch8254@mylaurier.ca
-__updated__ = "2025-06-24"
--------------------------------------------------------
-"""
-# Imports
-
-# Constants
-
-# decoder.py
+# Enhanced decoder.py with LDR/STR support
 
 from dataclasses import dataclass
-
 
 @dataclass
 class Instruction:
@@ -24,19 +9,22 @@ class Instruction:
     rn: int = 0
     rm: int = 0
     immediate: int = 0
+    offset: int = 0  # For memory instructions
     is_valid: bool = True
     mnemonic: str = "UNK"
-
+    is_memory_op: bool = False  # Flag for memory operations
 
 def decode_instruction(raw):
     inst = Instruction(raw=raw)
 
+    # Extract common fields
     cond = (raw >> 28) & 0xF
     opcode = (raw >> 21) & 0xF
     i_bit = (raw >> 25) & 0x1
     inst.rn = (raw >> 16) & 0xF
     inst.rd = (raw >> 12) & 0xF
 
+    # Branch instruction
     if (raw & 0x0E000000) == 0x0A000000:
         inst.mnemonic = "B"
         inst.immediate = raw & 0x00FFFFFF
@@ -44,18 +32,50 @@ def decode_instruction(raw):
             inst.immediate |= 0xFF000000 
         inst.immediate <<= 2
         inst.rd = 15  # target is PC
-        return inst  # done
+        return inst
 
+    # Single data transfer (LDR/STR)
+    elif (raw & 0x0C000000) == 0x04000000:
+        inst.is_memory_op = True
+        l_bit = (raw >> 20) & 0x1  # Load/Store bit
+        
+        if l_bit:
+            inst.mnemonic = "LDR"
+        else:
+            inst.mnemonic = "STR"
+            
+        # Extract 12-bit immediate offset
+        inst.offset = raw & 0xFFF
+        u_bit = (raw >> 23) & 0x1  # Up/Down bit
+        if not u_bit:  # Down bit - negative offset
+            inst.offset = -inst.offset
+            
+        return inst
+
+    # Data-processing instruction  
     elif (raw & 0x0C000000) == 0x00000000:
-        # Data-processing instruction
         if i_bit:
-            inst.immediate = raw & 0xFF
+            # Immediate value with rotation
+            immediate_8 = raw & 0xFF
+            rotate_imm = (raw >> 8) & 0xF
+            # Apply rotation: rotate right by (rotate_imm * 2) bits
+            rotate_amount = rotate_imm * 2
+            if rotate_amount == 0:
+                inst.immediate = immediate_8
+            else:
+                # Rotate right
+                inst.immediate = ((immediate_8 >> rotate_amount) | (immediate_8 << (32 - rotate_amount))) & 0xFFFFFFFF
         else:
             inst.rm = raw & 0xF
 
         if opcode == 0x0: inst.mnemonic = "AND"
         elif opcode == 0x1: inst.mnemonic = "EOR"
-        elif opcode == 0x2: inst.mnemonic = "SUB"
+        elif opcode == 0x2: 
+            s_bit = (raw >> 20) & 0x1
+            if s_bit:
+                inst.mnemonic = "SUBS"
+            else:
+                inst.mnemonic = "SUB"
         elif opcode == 0x3: inst.mnemonic = "RSB"
         elif opcode == 0x4: inst.mnemonic = "ADD"
         elif opcode == 0x5: inst.mnemonic = "ADC"
